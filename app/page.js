@@ -107,13 +107,14 @@ export default function Home() {
   const MIN_INCORRECT = 3;
 
   // filter per-chapter mastery & practice lists
-  const mastered = Object.entries(correctGroups).filter(
-    ([chap, cnt]) => cnt >= MIN_CORRECT
-  );
+  const mastered = Object.entries(correctGroups)
+  .filter(([chapter, cnt]) => cnt >= MIN_CORRECT)
+  .sort(([, aCount], [, bCount]) => bCount - aCount);
 
-  const needsPractice = Object.entries(incorrectGroups).filter(
-    ([chap, cnt]) => cnt >= MIN_INCORRECT
-  );
+  const needsPractice = Object.entries(incorrectGroups)
+  .filter(([chapter, cnt]) => cnt >= MIN_INCORRECT)
+  .sort(([, aCount], [, bCount]) => bCount - aCount);
+
 
   if (loading)
     return <div className="p-8 text-center">Cargando preguntas…</div>;
@@ -181,9 +182,40 @@ export default function Home() {
             </a>
           )}
 
+          {/* Action Button */}
+          <div className="text-center">
+            {!verified ? (
+              <button
+                onClick={handleVerify}
+                disabled={
+                  selected === null || // no option chosen
+                  verified || // already verified this question
+                  isVerifying // request in flight
+                }
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isVerifying ? "Verificando…" : "Verificar"}
+              </button>
+            ) : currentIdx < questions.length - 1 ? (
+              <button
+                onClick={handleNext}
+                className="px-6 py-2 bg-yellow-400 text-gray-800 rounded hover:bg-yellow-500"
+              >
+                Siguiente
+              </button>
+            ) : (
+              <div className="text-center font-semibold text-lg mt-4">
+                ¡Has completado el quiz!
+              </div>
+            )}
+          </div>
+
           {/* Results Summary (icons + counts) */}
           {results.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-4 mt-4">
+              <div className="text-center font-medium">
+                Correctas: {correctCount} &nbsp; Incorrectas: {incorrectCount}
+              </div>
               <div className="flex flex-wrap justify-center mb-2">
                 {results.map((r, i) => (
                   <span
@@ -191,13 +223,11 @@ export default function Home() {
                     className={`text-2xl mr-1 ${
                       r.correct ? "text-green-500" : "text-red-500"
                     }`}
+                    title={questions[i].text}
                   >
                     {r.correct ? "✅" : "❌"}
                   </span>
                 ))}
-              </div>
-              <div className="text-center font-medium">
-                Correctas: {correctCount} &nbsp; Incorrectas: {incorrectCount}
               </div>
             </div>
           )}
@@ -213,7 +243,7 @@ export default function Home() {
                       <li key={chapter} className="flex items-center">
                         <span className="font-medium mr-2">{chapter}</span>
                         {Array.from({ length: cnt }).map((_, i) => (
-                          <span key={i} className="text-green-500 text-xl mr-1">
+                          <span key={i} className="text-green-500 text-xl mr-1" title={questions[i].text}>
                             ✅
                           </span>
                         ))}
@@ -244,34 +274,6 @@ export default function Home() {
               )}
             </>
           )}
-
-          {/* Action Button */}
-          <div className="text-center">
-            {!verified ? (
-              <button
-                onClick={handleVerify}
-                disabled={
-                  selected === null || // no option chosen
-                  verified || // already verified this question
-                  isVerifying // request in flight
-                }
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              >
-                {isVerifying ? "Verificando…" : "Verificar"}
-              </button>
-            ) : currentIdx < questions.length - 1 ? (
-              <button
-                onClick={handleNext}
-                className="px-6 py-2 bg-yellow-400 text-gray-800 rounded hover:bg-yellow-500"
-              >
-                Siguiente
-              </button>
-            ) : (
-              <div className="text-center font-semibold text-lg mt-4">
-                ¡Has completado el quiz!
-              </div>
-            )}
-          </div>
         </div>
       </main>
     </>
