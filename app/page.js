@@ -18,6 +18,7 @@ export default function Home() {
   const [correctAnswer, setCorrectAnswer] = useState("");
   const [results, setResults] = useState([]);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [skippedQuestions, setSkippedQuestions] = useState([]);
 
   // Fisher–Yates shuffle
   function shuffleArray(arr) {
@@ -138,6 +139,30 @@ export default function Home() {
     setCorrectAnswer("");
   };
 
+  const handleSkip = () => {
+    const currentQuestion = questions[currentIdx];
+    
+    // Add current question to skipped list
+    setSkippedQuestions(prev => [...prev, currentQuestion]);
+    
+    // Remove current question from main questions array and add it to the end
+    setQuestions(prev => {
+      const newQuestions = [...prev];
+      const skippedQ = newQuestions.splice(currentIdx, 1)[0];
+      newQuestions.push(skippedQ);
+      return newQuestions;
+    });
+    
+    // Reset form state but don't increment currentIdx since we removed current question
+    setSelected(null);
+    setOpenAnswer("");
+    setVerified(false);
+    setIsCorrect(null);
+    setCorrectIndex(null);
+    setExplanation("");
+    setCorrectAnswer("");
+  };
+
   // Compute total counts
   const correctCount = results.filter((r) => r.correct).length;
   const incorrectCount = results.length - correctCount;
@@ -193,7 +218,12 @@ export default function Home() {
         <div className="relative bg-white border rounded-lg shadow p-8 w-full max-w-md">
           {/* PROGRESS INDICATOR */}
           <div className="absolute top-2 right-4 text-sm text-gray-500">
-            Progreso: {currentIdx + 1}/{questions.length}
+            <div>Progreso: {currentIdx + 1}/{questions.length}</div>
+            {skippedQuestions.length > 0 && (
+              <div className="text-xs text-orange-500">
+                Saltadas: {skippedQuestions.length}
+              </div>
+            )}
           </div>
           <div className="text-center mb-6">
             <p className="text-sm text-blue-500 mb-1">
@@ -236,7 +266,7 @@ export default function Home() {
             </a>
           )}
 
-          {/* Action Button */}
+          {/* Action Buttons */}
           <div className="text-center">
             {verified ? (
               currentIdx < questions.length - 1 ? (
@@ -252,9 +282,16 @@ export default function Home() {
                 </div>
               )
             ) : (
-              <div className="h-[36px] flex items-center justify-center">
+              <div className="flex items-center justify-center gap-3 h-[36px]">
                 {question.options && question.type !== 'open-answer' && isVerifying ? (
                   <p className="text-blue-500">Verificando…</p>
+                ) : question.type === 'open-answer' || !question.options ? (
+                  <button
+                    onClick={handleSkip}
+                    className="px-4 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
+                  >
+                    Paso
+                  </button>
                 ) : null}
               </div>
             )}
