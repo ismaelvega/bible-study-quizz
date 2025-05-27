@@ -103,8 +103,8 @@ export default function Home() {
   }, [results]);
 
   // thresholds
-  const MIN_CORRECT = 2;
-  const MIN_INCORRECT = 2;
+  const MIN_CORRECT = 3;
+  const MIN_INCORRECT = 3;
 
   // filter per-chapter mastery & practice lists
   const mastered = Object.entries(correctGroups).filter(
