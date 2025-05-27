@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 export default function Home() {
   const [questions, setQuestions] = useState([]);
@@ -41,10 +41,9 @@ export default function Home() {
     loadQuestions();
   }, []);
 
-  // 2. Handle verify by calling /api/verify
-  const handleVerify = async () => {
-    // guard: don’t run again if we’re already verifying
-    if (selected === null || isVerifying) return;
+  const handleVerify = useCallback(async () => {
+    // Guard: don't run if no option is selected, or if already verifying, or if already verified.
+    if (selected === null || isVerifying || verified) return;
 
     setIsVerifying(true);
     try {
@@ -52,7 +51,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          questionId: questions[currentIdx].id,
+          questionId: questions[currentIdx]?.id,
           selectedIndex: selected,
         }),
       });
@@ -62,16 +61,27 @@ export default function Home() {
       setVerified(true);
       setResults((prev) => [
         ...prev,
-        { correct, reference: questions[currentIdx].reference },
+        { correct, reference: questions[currentIdx]?.reference },
       ]);
     } catch (err) {
       console.error("Verification failed", err);
+      // Optionally, reset some state or show an error message to the user
     } finally {
-      // we don’t actually need to allow re-verifying once verified,
-      // but this resets the flag if you ever reuse it
       setIsVerifying(false);
     }
-  };
+  }, [selected, isVerifying, verified, questions, currentIdx, setIsVerifying, setIsCorrect, setCorrectIndex, setVerified, setResults]);
+
+  // Effect to automatically verify when an option is selected
+  useEffect(() => {
+    // Only run verify if:
+    // 1. An option has been selected (selected !== null)
+    // 2. The current question hasn't been verified yet (!verified)
+    // 3. We are not already in the process of verifying (!isVerifying)
+    if (selected !== null && !verified && !isVerifying) {
+      handleVerify();
+    }
+  }, [selected, verified, isVerifying, handleVerify]);
+
 
   const handleNext = () => {
     setCurrentIdx((i) => i + 1);
@@ -184,28 +194,24 @@ export default function Home() {
 
           {/* Action Button */}
           <div className="text-center">
-            {!verified ? (
-              <button
-                onClick={handleVerify}
-                disabled={
-                  selected === null || // no option chosen
-                  verified || // already verified this question
-                  isVerifying // request in flight
-                }
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              >
-                {isVerifying ? "Verificando…" : "Verificar"}
-              </button>
-            ) : currentIdx < questions.length - 1 ? (
-              <button
-                onClick={handleNext}
-                className="px-6 py-2 bg-yellow-400 text-gray-800 rounded hover:bg-yellow-500"
-              >
-                Siguiente
-              </button>
+            {verified ? (
+              currentIdx < questions.length - 1 ? (
+                <button
+                  onClick={handleNext}
+                  className="px-6 py-2 bg-yellow-400 text-gray-800 rounded hover:bg-yellow-500"
+                >
+                  Siguiente
+                </button>
+              ) : (
+                <div className="text-center font-semibold text-lg mt-4">
+                  ¡Has completado el quiz!
+                </div>
+              )
             ) : (
-              <div className="text-center font-semibold text-lg mt-4">
-                ¡Has completado el quiz!
+              <div className="h-[36px] flex items-center justify-center"> {/* Placeholder to maintain layout space */}
+                {isVerifying && (
+                  <p className="text-blue-500">Verificando…</p>
+                )}
               </div>
             )}
           </div>
