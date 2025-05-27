@@ -1,22 +1,28 @@
 # Study Bible Quiz
 
-A Next.js application for interactive Bible study through multiple-choice questions. Users can test their knowledge of scripture and get immediate feedback on their answers.
+A Next.js application for interactive Bible study through multiple-choice and open-answer questions. Users can test their knowledge of scripture and get immediate feedback on their answers with AI-powered verification.
 
 ## Features
 
-- Interactive multiple-choice quiz interface
+- Interactive multiple-choice and open-answer quiz interface
+- AI-powered answer verification using OpenAI
 - Real-time answer verification
 - Score tracking with visual indicators (✅/❌)
+- Progress tracking with mastery and practice suggestions
 - Bible passage references and links
+- Spanish localization ("Estudia Jueces y Rut")
 - Responsive design with Tailwind CSS
 - Supabase backend for question storage
+- Randomized question order
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15, React 19, Tailwind CSS
+- **Frontend**: Next.js 15, React 19, Tailwind CSS v4
 - **Backend**: Next.js API routes
 - **Database**: Supabase
-- **Styling**: Tailwind CSS
+- **AI**: OpenAI API for open-answer verification
+- **Validation**: Zod for schema validation
+- **Styling**: Tailwind CSS v4
 
 ## Getting Started
 
@@ -41,11 +47,12 @@ npm install
 ```
 
 3. Set up environment variables:
-Create a `.env.local` file in the root directory and add your Supabase credentials:
+Create a `.env.local` file in the root directory and add your credentials:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 4. Run the development server:
@@ -64,8 +71,9 @@ The application expects a `questions` table in Supabase with the following struc
 CREATE TABLE questions (
   id INTEGER PRIMARY KEY,
   text TEXT NOT NULL,
-  options TEXT[] NOT NULL,
-  correctIndex INTEGER NOT NULL,
+  options TEXT[], -- Optional for open-answer questions
+  correctIndex INTEGER, -- Optional for open-answer questions  
+  type TEXT, -- 'multiple-choice' or 'open-answer'
   reference TEXT,
   url TEXT
 );
@@ -74,10 +82,12 @@ CREATE TABLE questions (
 ## API Endpoints
 
 - `GET /api/getQuestions` - Retrieves all questions (without correct answers)
-- `POST /api/verify` - Verifies a submitted answer and returns correctness
+- `POST /api/verify` - Verifies a submitted multiple-choice answer
+- `POST /api/verifyOpenAnswer` - Verifies open-answer questions using OpenAI
 
 ## Scripts
 
 - `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production
+- `npm run build` - Build for production  
 - `npm run start` - Start production server
+- `npm run lint` - Run ESLint

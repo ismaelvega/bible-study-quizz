@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import MultipleChoiceQuestion from "../components/MultipleChoiceQuestion";
+import OpenAnswerQuestion from "../components/OpenAnswerQuestion";
 
 export default function Home() {
   const [questions, setQuestions] = useState([]);
@@ -8,9 +10,12 @@ export default function Home() {
   const [currentIdx, setCurrentIdx] = useState(0);
 
   const [selected, setSelected] = useState(null);
+  const [openAnswer, setOpenAnswer] = useState("");
   const [verified, setVerified] = useState(false);
   const [isCorrect, setIsCorrect] = useState(null);
   const [correctIndex, setCorrectIndex] = useState(null);
+  const [explanation, setExplanation] = useState("");
+  const [correctAnswer, setCorrectAnswer] = useState("");
   const [results, setResults] = useState([]);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -29,11 +34,17 @@ export default function Home() {
       try {
         const res = await fetch("/api/getQuestions");
         const data = await res.json();
-        // Shuffle right here
-        const randomized = shuffleArray(data);
-        setQuestions(randomized);
+        // Check if data is an array before shuffling
+        if (Array.isArray(data)) {
+          const randomized = shuffleArray(data);
+          setQuestions(randomized);
+        } else {
+          console.error("API returned non-array data:", data);
+          setQuestions([]);
+        }
       } catch (err) {
         console.error("Failed to load questions", err);
+        setQuestions([]);
       } finally {
         setLoading(false);
       }
@@ -42,37 +53,70 @@ export default function Home() {
   }, []);
 
   const handleVerify = useCallback(async () => {
-    // Guard: don't run if no option is selected, or if already verifying, or if already verified.
-    if (selected === null || isVerifying || verified) return;
+    const currentQuestion = questions[currentIdx];
+    if (!currentQuestion || isVerifying || verified) return;
+    
+    // Check if we have an answer for the current question type
+    if (currentQuestion.type === 'open-answer' || !currentQuestion.options) {
+      if (!openAnswer.trim()) return;
+    } else {
+      if (selected === null) return;
+    }
 
     setIsVerifying(true);
     try {
-      const res = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          questionId: questions[currentIdx]?.id,
-          selectedIndex: selected,
-        }),
-      });
-      const { correct, correctIndex: idx } = await res.json();
-      setIsCorrect(correct);
-      setCorrectIndex(idx);
+      let correct = false;
+      
+      if (currentQuestion.type === 'open-answer' || !currentQuestion.options) {
+        // check anwsers' length
+        if (openAnswer.length > 401){
+          return
+        }
+
+        const res = await fetch("/api/verifyOpenAnswer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionId: currentQuestion.id,
+            userAnswer: openAnswer,
+          }),
+        });
+        const { isCorrect: isAnswerCorrect, explanation: exp } = await res.json();
+        correct = isAnswerCorrect;
+        setIsCorrect(correct);
+        setExplanation(exp);
+      } else {
+        const res = await fetch("/api/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionId: currentQuestion.id,
+            selectedIndex: selected,
+          }),
+        });
+        const { correct: isAnswerCorrect, correctIndex: idx } = await res.json();
+        correct = isAnswerCorrect;
+        setIsCorrect(correct);
+        setCorrectIndex(idx);
+      }
+      
       setVerified(true);
       setResults((prev) => [
         ...prev,
-        { correct, reference: questions[currentIdx]?.reference },
+        { correct, reference: currentQuestion.reference },
       ]);
     } catch (err) {
       console.error("Verification failed", err);
-      // Optionally, reset some state or show an error message to the user
     } finally {
       setIsVerifying(false);
     }
-  }, [selected, isVerifying, verified, questions, currentIdx, setIsVerifying, setIsCorrect, setCorrectIndex, setVerified, setResults]);
+  }, [selected, openAnswer, isVerifying, verified, questions, currentIdx]);
 
-  // Effect to automatically verify when an option is selected
+  // Effect to automatically verify when an option is selected (only for multiple choice)
   useEffect(() => {
+    const currentQuestion = questions[currentIdx];
+    if (!currentQuestion || currentQuestion.type === 'open-answer' || !currentQuestion.options) return;
+    
     // Only run verify if:
     // 1. An option has been selected (selected !== null)
     // 2. The current question hasn't been verified yet (!verified)
@@ -80,15 +124,18 @@ export default function Home() {
     if (selected !== null && !verified && !isVerifying) {
       handleVerify();
     }
-  }, [selected, verified, isVerifying, handleVerify]);
+  }, [selected, verified, isVerifying, handleVerify, questions, currentIdx]);
 
 
   const handleNext = () => {
     setCurrentIdx((i) => i + 1);
     setSelected(null);
+    setOpenAnswer("");
     setVerified(false);
     setIsCorrect(null);
     setCorrectIndex(null);
+    setExplanation("");
+    setCorrectAnswer("");
   };
 
   // Compute total counts
@@ -99,7 +146,7 @@ export default function Home() {
   const { correctGroups, incorrectGroups } = useMemo(() => {
     return results.reduce(
       (acc, { correct, reference }) => {
-        const chapter = reference.split(":")[0]; // e.g. "Jueces 10"
+        const chapter = reference.split(":")[0];
         if (correct) {
           acc.correctGroups[chapter] = (acc.correctGroups[chapter] || 0) + 1;
         } else {
@@ -150,35 +197,32 @@ export default function Home() {
           </div>
           <div className="text-center mb-6">
             <p className="text-sm text-blue-500 mb-1">
-              Pregunta {question.id}:{" "}
+              Pregunta {question.id}:
             </p>
             <h1 className="text-2xl font-semibold">{question.text}</h1>
           </div>
 
-          {/* Options */}
-          <div className="space-y-4 mb-6">
-            {question.options.map((opt, idx) => {
-              let style = "border-gray-800";
-              if (selected === idx && !verified) style = "bg-gray-200";
-              if (verified) {
-                if (idx === correctIndex)
-                  style = "bg-green-100 border-green-500";
-                else if (selected === idx && !isCorrect)
-                  style = "bg-red-100 border-red-500";
-                else style = "border-gray-300";
-              }
-              return (
-                <button
-                  key={idx}
-                  onClick={() => !verified && setSelected(idx)}
-                  disabled={verified}
-                  className={`w-full py-2 border rounded-lg text-lg font-medium ${style}`}
-                >
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
+          {/* Question Input */}
+          {question.type === 'open-answer' || !question.options ? (
+            <OpenAnswerQuestion
+              openAnswer={openAnswer}
+              setOpenAnswer={setOpenAnswer}
+              verified={verified}
+              isCorrect={isCorrect}
+              explanation={explanation}
+              onVerify={handleVerify}
+              isVerifying={isVerifying}
+            />
+          ) : (
+            <MultipleChoiceQuestion
+              question={question}
+              selected={selected}
+              setSelected={setSelected}
+              verified={verified}
+              isCorrect={isCorrect}
+              correctIndex={correctIndex}
+            />
+          )}
 
           {/* Passage Link: always show after verification */}
           {verified && (
@@ -208,10 +252,10 @@ export default function Home() {
                 </div>
               )
             ) : (
-              <div className="h-[36px] flex items-center justify-center"> {/* Placeholder to maintain layout space */}
-                {isVerifying && (
+              <div className="h-[36px] flex items-center justify-center">
+                {question.options && question.type !== 'open-answer' && isVerifying ? (
                   <p className="text-blue-500">Verificando…</p>
-                )}
+                ) : null}
               </div>
             )}
           </div>

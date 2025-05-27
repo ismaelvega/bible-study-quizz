@@ -5,7 +5,7 @@ import { supabase } from '../../../utils/supabase/client.js'
 export async function GET() {
   const { data, error } = await supabase
     .from('questions')
-    .select('id, text, options, reference, url')
+    .select('id, text, options, reference, url, type')
     .order('id', { ascending: true })
 
   if (error) {
