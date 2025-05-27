@@ -297,28 +297,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Results Summary (icons + counts) */}
-          {results.length > 0 && (
-            <div className="mb-4 mt-4">
-              <div className="text-center font-medium">
-                Correctas: {correctCount} &nbsp; Incorrectas: {incorrectCount}
-              </div>
-              <div className="flex flex-wrap justify-center mb-2">
-                {results.map((r, i) => (
-                  <span
-                    key={i}
-                    className={`text-2xl mr-1 ${
-                      r.correct ? "text-green-500" : "text-red-500"
-                    }`}
-                    title={questions[i].text}
-                  >
-                    {r.correct ? "✅" : "❌"}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Chapter mastery and suggestions */}
           {results.length > 0 && (
             <>
@@ -361,6 +339,30 @@ export default function Home() {
               )}
             </>
           )}
+
+          {/* Results Summary (icons + counts) */}
+          {results.length > 0 && (
+            <div className="mb-4 mt-4">
+              <div className="text-center font-medium">
+                Correctas: {correctCount} &nbsp; Incorrectas: {incorrectCount}
+              </div>
+              <div className="flex flex-wrap justify-center mb-2">
+                {results.map((r, i) => (
+                  <span
+                    key={i}
+                    className={`text-2xl mr-1 ${
+                      r.correct ? "text-green-500" : "text-red-500"
+                    }`}
+                    title={questions[i].text}
+                  >
+                    {r.correct ? "✅" : "❌"}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          
         </div>
       </main>
     </>
