@@ -5,6 +5,7 @@ import MultipleChoiceQuestion from "../components/MultipleChoiceQuestion";
 import OpenAnswerQuestion from "../components/OpenAnswerQuestion";
 
 export default function Home() {
+  const [allQuestions, setAllQuestions] = useState([]); // NEW: store all fetched questions
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -19,6 +20,8 @@ export default function Home() {
   const [results, setResults] = useState([]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [skippedQuestions, setSkippedQuestions] = useState([]);
+  const [numQuestions, setNumQuestions] = useState(null); // <--- NEW
+  const [quizStarted, setQuizStarted] = useState(false);  // <--- NEW
 
   // Fisher–Yates shuffle
   function shuffleArray(arr) {
@@ -30,28 +33,40 @@ export default function Home() {
     return a;
   }
 
+  // Fetch all questions on mount
   useEffect(() => {
-    async function loadQuestions() {
+    async function fetchAllQuestions() {
+      setLoading(true);
       try {
         const res = await fetch("/api/getQuestions");
         const data = await res.json();
-        // Check if data is an array before shuffling
         if (Array.isArray(data)) {
-          const randomized = shuffleArray(data);
-          setQuestions(randomized);
+          setAllQuestions(data);
         } else {
-          console.error("API returned non-array data:", data);
-          setQuestions([]);
+          setAllQuestions([]);
         }
       } catch (err) {
-        console.error("Failed to load questions", err);
-        setQuestions([]);
+        setAllQuestions([]);
       } finally {
         setLoading(false);
       }
     }
-    loadQuestions();
+    fetchAllQuestions();
   }, []);
+
+  // When user chooses, shuffle and slice from allQuestions
+  useEffect(() => {
+    if (quizStarted && numQuestions && allQuestions.length > 0) {
+      setLoading(true);
+      const randomized = shuffleArray(allQuestions);
+      setQuestions(
+        numQuestions === "all"
+          ? randomized
+          : randomized.slice(0, Number(numQuestions))
+      );
+      setLoading(false);
+    }
+  }, [quizStarted, numQuestions, allQuestions]);
 
   const handleVerify = useCallback(async () => {
     const currentQuestion = questions[currentIdx];
@@ -198,12 +213,44 @@ export default function Home() {
   .sort(([, aCount], [, bCount]) => bCount - aCount);
 
 
-  if (loading)
-    return <div className="p-8 text-center">Cargando preguntas…</div>;
-  if (!questions.length)
-    return <div className="p-8 text-center">No hay preguntas.</div>;
+  // Show selection screen before quiz starts
+  if (!quizStarted) {
+    if (loading) {
+      return <div className="p-8 text-center">Cargando preguntas…</div>;
+    }
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded shadow max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold mb-4">¿Cuántas preguntas quieres responder?</h1>
+          <div className="mb-2 text-gray-600">
+            Total disponibles: <span className="font-semibold">{allQuestions.length}</span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {[20, 50, 100, "all"].map(opt => (
+              <button
+                key={opt}
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={() => {
+                  setNumQuestions(opt);
+                  setQuizStarted(true);
+                }}
+                disabled={typeof opt === "number" && opt > allQuestions.length}
+              >
+                {opt === "all" ? "Todas" : opt}
+              </button>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const question = questions[currentIdx];
+
+  // Optionally, handle the case where questions is empty
+  if (!question) {
+    return <div className="p-8 text-center">No hay preguntas.</div>;
+  }
 
   return (
     <>
@@ -305,13 +352,15 @@ export default function Home() {
                   <h2 className="text-green-600 font-semibold">Ya dominas</h2>
                   <ul className="mt-2 space-y-1">
                     {mastered.map(([chapter, cnt]) => (
-                      <li key={chapter} className="flex items-center">
-                        <span className="font-medium mr-2">{chapter}</span>
-                        {Array.from({ length: cnt }).map((_, i) => (
-                          <span key={i} className="text-green-500 text-xl mr-1" title={questions[i].text}>
-                            ✅
-                          </span>
-                        ))}
+                      <li key={chapter} className="flex flex-wrap items-center">
+                        <span className="font-medium mr-2 whitespace-nowrap">{chapter}</span>
+                        <div className="flex flex-wrap">
+                          {Array.from({ length: cnt }).map((_, i) => (
+                            <span key={i} className="text-green-500 text-xl mr-1" title={questions[i].text}>
+                              ✅
+                            </span>
+                          ))}
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -325,13 +374,15 @@ export default function Home() {
                   </h2>
                   <ul className="mt-2 space-y-1">
                     {needsPractice.map(([chapter, cnt]) => (
-                      <li key={chapter} className="flex items-center">
-                        <span className="font-medium mr-2">{chapter}</span>
-                        {Array.from({ length: cnt }).map((_, i) => (
-                          <span key={i} className="text-red-500 text-xl mr-1">
-                            ❌
-                          </span>
-                        ))}
+                      <li key={chapter} className="flex flex-wrap items-center">
+                        <span className="font-medium mr-2 whitespace-nowrap">{chapter}</span>
+                        <div className="flex flex-wrap">
+                          {Array.from({ length: cnt }).map((_, i) => (
+                            <span key={i} className="text-red-500 text-xl mr-1" title={questions[i].text}>
+                              ❌
+                            </span>
+                          ))}
+                        </div>
                       </li>
                     ))}
                   </ul>
