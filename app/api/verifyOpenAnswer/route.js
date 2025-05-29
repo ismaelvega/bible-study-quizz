@@ -15,8 +15,7 @@ const anwserVerification = z.object({
 
 export async function POST(req) {
   // 1) parse payload
-  console.log('req:', req.questionId, req.userAnswer)
-  const { questionId, userAnswer } = await req.json()
+  const { questionId, userAnswer, reference } = await req.json()
 
   // 1.5 checks if the length is huge
   if (userAnswer.length > 700) {
@@ -51,7 +50,7 @@ export async function POST(req) {
         Cosas que deberías saber: Tus respuestas vienen de jóvenes con una edad promedio de 20 años.
         Estos jóvenes están practicando para una competencia de preguntas y respuestas sobre Jueces y Rut. No seas tan duro con ellos jaja
         Importante:
-        -la cita correspondiente a la respuesta ya la otorga el sistema, omite sugerir citas.
+        - La pregunta se basa en el pasaje ${reference}
         - Si la respuesta no tiene nada que ver con la pregunta, responde algo como "suerte con eso" y marcala como incorrecta
         ${question.text}
 
@@ -70,13 +69,22 @@ export async function POST(req) {
     });
 
 const anwserVerificationOutput = response.output_parsed;
-console.log('anwserVerificationOutput:', anwserVerificationOutput)
 
-    // 5) return structured response
-    return NextResponse.json(anwserVerificationOutput)
+const jsonToReturn = {
+  questionId,
+  questionText: question.text,
+  reference,
+  isCorrect: anwserVerificationOutput.isCorrect,
+  explanation: anwserVerificationOutput.explanation,
+  userAnswer,
+}
+console.log('jsonToReturn:', jsonToReturn)
 
-  } catch (err) {
-    console.error('Verification error:', err)
+// 5) return structured response
+return NextResponse.json(jsonToReturn)
+
+} catch (err) {
+  console.error('Verification error:', err)
     return NextResponse.json(
       { error: 'No se pudo verificar la respuesta' },
       { status: 500 }

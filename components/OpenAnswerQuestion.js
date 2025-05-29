@@ -29,7 +29,12 @@ export default function OpenAnswerQuestion({
         {verified && (
           <div className="mt-3 p-3 bg-gray-50 rounded-lg">
             <div className={`font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-              {explanation}
+              {/* There's a chance that the user is informed whether the answer is correct or not but the explanation is not provided */}
+              {explanation ? explanation : (isCorrect ? "¡Respuesta correcta!" : "Respuesta incorrecta.")}
+            </div>
+            {/* Disclaimer. AI generated answer */}
+            <div className="text-xs text-gray-500 mt-2">
+              Nota: Esta respuesta fue generada por un modelo de IA y puede no ser 100% precisa.
             </div>
           </div>
         )}

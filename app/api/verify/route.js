@@ -5,15 +5,13 @@ import { supabase } from '../../../utils/supabase/client.js'
 export async function POST(req) {
   const { questionId, selectedIndex } = await req.json()
 
-  console.log({ questionId, selectedIndex })
+  // console.log({ questionId, selectedIndex })
 
   const { data, error } = await supabase
     .from('questions')
     .select('correctIndex')
     .eq('id', questionId)
     .single()
-
-  console.log({ data, error })
 
   if (error || !data) {
     return NextResponse.json({ error: error ? error.message : 'Not found' }, { status: 500 })

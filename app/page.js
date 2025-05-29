@@ -22,6 +22,7 @@ export default function Home() {
   const [skippedQuestions, setSkippedQuestions] = useState([]);
   const [numQuestions, setNumQuestions] = useState(null); // <--- NEW
   const [quizStarted, setQuizStarted] = useState(false);  // <--- NEW
+  const [questionType, setQuestionType] = useState(null); // "multiple", "open", or "both"
 
   // Fisher–Yates shuffle
   function shuffleArray(arr) {
@@ -56,9 +57,17 @@ export default function Home() {
 
   // When user chooses, shuffle and slice from allQuestions
   useEffect(() => {
-    if (quizStarted && numQuestions && allQuestions.length > 0) {
+    if (quizStarted && numQuestions && allQuestions.length > 0 && questionType) {
       setLoading(true);
-      const randomized = shuffleArray(allQuestions);
+      // Filter by type
+      const filtered = allQuestions.filter(q =>
+        questionType === "both"
+          ? true
+          : questionType === "multiple"
+            ? q.options && q.type !== "open-answer"
+            : !q.options || q.type === "open-answer"
+      );
+      const randomized = shuffleArray(filtered);
       setQuestions(
         numQuestions === "all"
           ? randomized
@@ -66,7 +75,7 @@ export default function Home() {
       );
       setLoading(false);
     }
-  }, [quizStarted, numQuestions, allQuestions]);
+  }, [quizStarted, numQuestions, allQuestions, questionType]);
 
   const handleVerify = useCallback(async () => {
     const currentQuestion = questions[currentIdx];
@@ -94,6 +103,7 @@ export default function Home() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             questionId: currentQuestion.id,
+            reference: currentQuestion.reference,
             userAnswer: openAnswer,
           }),
         });
@@ -218,15 +228,60 @@ export default function Home() {
     if (loading) {
       return <div className="p-8 text-center">Cargando preguntas…</div>;
     }
+
+    // Choose question type
+    if (!questionType) {
+      return (
+        <main className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="bg-white p-8 rounded shadow max-w-md w-full text-center">
+            <h1 className="text-2xl font-bold mb-4">¿Qué tipo de preguntas prefieres?</h1>
+            <div className="flex flex-col gap-3">
+              <button
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={() => setQuestionType("multiple")}
+              >
+                Solo opción múltiple
+              </button>
+              <button
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={() => setQuestionType("open")}
+              >
+                Solo respuesta abierta
+              </button>
+              <button
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={() => setQuestionType("both")}
+              >
+                Ambas
+              </button>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    // - Choose number of questions
+    // Filter available questions by type
+    const filteredQuestions = allQuestions.filter(q =>
+      questionType === "both"
+        ? true
+        : questionType === "multiple"
+          ? q.options && q.type !== "open-answer"
+          : !q.options || q.type === "open-answer"
+    );
+
+    const possibleOptions = [20, 50, 100].filter(opt => opt <= filteredQuestions.length);
+    if (filteredQuestions.length > 0) possibleOptions.push("all");
+
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded shadow max-w-md w-full text-center">
           <h1 className="text-2xl font-bold mb-4">¿Cuántas preguntas quieres responder?</h1>
           <div className="mb-2 text-gray-600">
-            Total disponibles: <span className="font-semibold">{allQuestions.length}</span>
+            Total disponibles: <span className="font-semibold">{filteredQuestions.length}</span>
           </div>
           <div className="flex flex-col gap-3">
-            {[20, 50, 100, "all"].map(opt => (
+            {possibleOptions.map(opt => (
               <button
                 key={opt}
                 className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -234,9 +289,8 @@ export default function Home() {
                   setNumQuestions(opt);
                   setQuizStarted(true);
                 }}
-                disabled={typeof opt === "number" && opt > allQuestions.length}
               >
-                {opt === "all" ? "Todas" : opt}
+                {opt === "all" ? `Todas (${filteredQuestions.length})` : `${opt} preguntas`}
               </button>
             ))}
           </div>
