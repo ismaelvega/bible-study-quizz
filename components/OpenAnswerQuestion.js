@@ -27,14 +27,19 @@ export default function OpenAnswerQuestion({
           rows={4}
         />
         {verified && (
-          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-            <div className={`font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-              {/* There's a chance that the user is informed whether the answer is correct or not but the explanation is not provided */}
-              {explanation ? explanation : (isCorrect ? "¡Respuesta correcta!" : "Respuesta incorrecta.")}
-            </div>
-            {/* Disclaimer. AI generated answer */}
-            <div className="text-xs text-gray-500 mt-2">
-              Nota: Esta respuesta fue generada por un modelo de IA y puede no ser 100% precisa.
+          <div className={`mt-3 p-3 rounded-lg flex items-start gap-2 ${
+            isCorrect ? "bg-green-50 border border-green-400" : "bg-amber-50 border border-amber-400"
+          }`}>
+            <span className={`text-2xl mt-0.5 ${isCorrect ? "text-green-500" : "text-amber-500"}`}>
+              {isCorrect ? "✅" : "💡"}
+            </span>
+            <div>
+              <div className={`font-medium ${isCorrect ? "text-green-700" : "text-amber-700"}`}>
+                {explanation ? explanation : (isCorrect ? "¡Respuesta correcta!" : "Respuesta incorrecta.")}
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                Nota: Esta respuesta fue generada por un modelo de IA y puede no ser 100% precisa.
+              </div>
             </div>
           </div>
         )}

@@ -20,9 +20,9 @@ export default function Home() {
   const [results, setResults] = useState([]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [skippedQuestions, setSkippedQuestions] = useState([]);
-  const [numQuestions, setNumQuestions] = useState(null); // <--- NEW
-  const [quizStarted, setQuizStarted] = useState(false);  // <--- NEW
-  const [questionType, setQuestionType] = useState(null); // "multiple", "open", or "both"
+  const [numQuestions, setNumQuestions] = useState(null);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [questionType, setQuestionType] = useState(null);
 
   // Fisher–Yates shuffle
   function shuffleArray(arr) {
@@ -232,36 +232,66 @@ export default function Home() {
     // Choose question type
     if (!questionType) {
       return (
-        <main className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="bg-white p-8 rounded shadow max-w-md w-full text-center">
-            <h1 className="text-2xl font-bold mb-4">¿Qué tipo de preguntas prefieres?</h1>
-            <div className="flex flex-col gap-3">
-              <button
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={() => setQuestionType("multiple")}
-              >
-                Solo opción múltiple
-              </button>
-              <button
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={() => setQuestionType("open")}
-              >
-                Solo respuesta abierta
-              </button>
-              <button
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                onClick={() => setQuestionType("both")}
-              >
-                Ambas
-              </button>
+        <>
+          {/* Page Header - Remains for all pre-quiz steps */}
+          <header className="bg-slate-800 text-white p-4 shadow-md h-16 flex items-center sticky top-0 z-50">
+            <div className="container mx-auto flex justify-between items-center">
+              <h1 className="text-xl font-semibold">Estudio Bíblico Interactivo</h1>
+              {/* No "Configurar Quiz" button here as we are at the first step */}
+            </div>
+          </header>
+
+          {/* Hero Header Text - ONLY FOR QUESTION TYPE SELECTION SCREEN */}
+          <div className="bg-slate-700 text-white py-8 text-center">
+            <div className="container mx-auto">
+              <h2 className="text-4xl font-bold">Jueces 13 a Rut 3</h2>
+              <p className="text-slate-300 mt-2 text-base">Pon a prueba tus conocimientos.</p>
             </div>
           </div>
-        </main>
+
+          <main className="min-h-[calc(100vh-4rem-8rem)] flex items-center justify-center bg-gray-100 p-4"> {/* Adjusted min-height */}
+            <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center border border-slate-200">
+              <h1 className="text-3xl font-bold mb-8 text-slate-700">¿Qué tipo de preguntas prefieres?</h1>
+              <div className="space-y-6"> {/* Increased spacing between options */}
+                <div>
+                  <button
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-all text-lg font-medium"
+                    onClick={() => setQuestionType("multiple")}
+                  >
+                    <span className="text-2xl">📝</span> {/* Icon for multiple choice */}
+                    Opción Múltiple
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2">Elige la respuesta correcta entre varias opciones.</p>
+                </div>
+                <div>
+                  <button
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-teal-500 text-white rounded-lg shadow-md hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-75 transition-all text-lg font-medium"
+                    onClick={() => setQuestionType("open")}
+                  >
+                    <span className="text-2xl">✍️</span> {/* Icon for open answer */}
+                    Respuesta Abierta
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2">Escribe tu propia respuesta a la pregunta.</p>
+                </div>
+                <div>
+                  <button
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-indigo-500 text-white rounded-lg shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition-all text-lg font-medium"
+                    onClick={() => setQuestionType("both")}
+                  >
+                    <span className="text-2xl">🔀</span> {/* Icon for both */}
+                    Ambas
+                  </button>
+                  <p className="text-xs text-gray-500 mt-2">Una mezcla de preguntas de opción múltiple y abiertas.</p>
+                </div>
+              </div>
+            </div>
+          </main>
+        </>
       );
     }
 
-    // - Choose number of questions
-    // Filter available questions by type
+    // - Choose number of questions screen
+    // (The hero header will NOT be rendered here)
     const filteredQuestions = allQuestions.filter(q =>
       questionType === "both"
         ? true
@@ -273,27 +303,59 @@ export default function Home() {
     const possibleOptions = [20, 50, 100].filter(opt => opt <= filteredQuestions.length);
     if (filteredQuestions.length > 0) possibleOptions.push("all");
 
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded shadow max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold mb-4">¿Cuántas preguntas quieres responder?</h1>
-          <div className="mb-2 text-gray-600">
-            Total disponibles: <span className="font-semibold">{filteredQuestions.length}</span>
+    if (filteredQuestions.length === 0 && !loading) {
+      return (
+        <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+          <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center border border-slate-200">
+            <h1 className="text-2xl font-bold mb-4 text-slate-700">No hay preguntas disponibles</h1>
+            <p className="text-gray-600 mb-6">
+              No se encontraron preguntas para el tipo seleccionado. Por favor, intenta con otra opción.
+            </p>
+            <button
+              onClick={() => setQuestionType(null)} // Go back to type selection
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-all text-lg font-medium"
+            >
+              Elegir otro tipo
+            </button>
           </div>
-          <div className="flex flex-col gap-3">
+        </main>
+      );
+    }
+
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center border border-slate-200">
+          <h1 className="text-3xl font-bold mb-6 text-slate-700">¿Cuántas preguntas quieres responder?</h1>
+          <div className="mb-6 text-gray-600">
+            Total disponibles para <span className="font-semibold text-slate-700">{questionType === "multiple" ? "Opción Múltiple" : questionType === "open" ? "Respuesta Abierta" : "Ambas"}</span>: 
+            <span className="block text-2xl font-bold text-blue-600 mt-1">{filteredQuestions.length}</span>
+          </div>
+          <div className="space-y-4">
             {possibleOptions.map(opt => (
               <button
                 key={opt}
-                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className={`w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg shadow-md transition-all text-lg font-medium
+                  ${opt === "all"
+                    ? "bg-green-500 hover:bg-green-600 focus:ring-green-400 text-white"
+                    : "bg-blue-500 hover:bg-blue-600 focus:ring-blue-400 text-white"
+                  }
+                  focus:outline-none focus:ring-2 focus:ring-opacity-75
+                `}
                 onClick={() => {
                   setNumQuestions(opt);
                   setQuizStarted(true);
                 }}
               >
+                {/* Optional: Add icons here if desired */}
                 {opt === "all" ? `Todas (${filteredQuestions.length})` : `${opt} preguntas`}
               </button>
             ))}
           </div>
+          {filteredQuestions.length > 100 && (
+             <p className="text-xs text-gray-500 mt-6">
+               Prueba con 20 o 50 preguntas para un inicio más rápido.
+             </p>
+          )}
         </div>
       </main>
     );
@@ -303,34 +365,93 @@ export default function Home() {
 
   // Optionally, handle the case where questions is empty
   if (!question) {
-    return <div className="p-8 text-center">No hay preguntas.</div>;
+    // If quiz has started but no questions (e.g., filtered out all)
+    if (quizStarted) {
+      return (
+        <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+          <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center border border-slate-200">
+            <h1 className="text-2xl font-bold mb-4 text-slate-700">No hay preguntas disponibles</h1>
+            <p className="text-gray-600 mb-6">
+              No se encontraron preguntas para el tipo y número seleccionados.
+            </p>
+            <button
+              onClick={() => {
+                setQuizStarted(false);
+                setQuestionType(null);
+                setNumQuestions(null);
+              }}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-all text-lg font-medium"
+            >
+              Volver a configurar
+            </button>
+          </div>
+        </main>
+      );
+    }
+    return <div className="p-8 text-center">Cargando preguntas o no hay preguntas disponibles...</div>;
   }
 
+  // WHEN QUIZ HAS STARTED (The hero header will NOT be rendered here either)
   return (
     <>
       {/* Page Header */}
-      <header className="bg-slate-800 text-white p-4 shadow-md h-16 flex items-center">
-        <div className="container mx-auto">
-          <h1 className="text-xl font-semibold">Estudia Jueces y Rut</h1>
+      <header className="bg-slate-800 text-white p-4 shadow-md h-16 flex items-center sticky top-0 z-50">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-xl font-semibold">Estudio Bíblico Interactivo</h1>
+          <button
+            onClick={() => {
+              // Reset all quiz-related states to go back to selection
+              setQuizStarted(false);
+              setQuestionType(null);
+              setNumQuestions(null);
+              setCurrentIdx(0);
+              setResults([]);
+              setSkippedQuestions([]);
+              setSelected(null);
+              setOpenAnswer("");
+              setVerified(false);
+            }}
+            className="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-md"
+          >
+            Configurar Quiz
+          </button>
         </div>
       </header>
 
-      <main className="min-h-[calc(100vh-4rem)] bg-gray-50 flex items-center justify-center p-4">
-        <div className="relative bg-white border rounded-lg shadow p-8 w-full max-w-md">
-          {/* PROGRESS INDICATOR */}
-          <div className="absolute top-2 right-4 text-sm text-gray-500">
-            <div>Progreso: {currentIdx + 1}/{questions.length}</div>
+      {/* NO Hero Header Text here */}
+
+      <main className="min-h-[calc(100vh-4rem)] bg-gray-50 flex flex-col items-center justify-start p-4 pt-8"> {/* Adjusted min-height */}
+        <div className="relative bg-white border rounded-lg shadow-xl p-6 sm:p-8 w-full max-w-xl mb-8">
+          {/* PROGRESS BAR */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">
+                Progreso
+              </span>
+              <span className="text-sm text-gray-500">
+                {currentIdx + 1}/{questions.length}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-in-out"
+                style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
+              ></div>
+            </div>
             {skippedQuestions.length > 0 && (
-              <div className="text-xs text-orange-500">
+              <div className="text-xs text-orange-500 mt-1 text-center">
                 Saltadas: {skippedQuestions.length}
               </div>
             )}
           </div>
-          <div className="text-center mb-6">
-            <p className="text-sm text-blue-500 mb-1">
+
+          <div className="text-center mb-8">
+            <p className="text-sm text-blue-600 mb-1 font-medium">
               Pregunta {question.id}:
             </p>
-            <h1 className="text-2xl font-semibold">{question.text}</h1>
+            <h1 className="text-3xl font-bold text-slate-800 leading-tight">
+              {question.text}
+            </h1>
           </div>
 
           {/* Question Input */}
