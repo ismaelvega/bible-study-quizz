@@ -13,6 +13,11 @@ const anwserVerification = z.object({
   explanation: z.string(),
 })
 
+// const model = "o3-mini-2025-01-31";
+// const model = "o4-mini-2025-04-16";
+// const model = "gpt-4o-2024-08-06";
+
+
 export async function POST(req) {
   // 1) parse payload
   const { questionId, userAnswer, reference } = await req.json()
@@ -24,6 +29,10 @@ export async function POST(req) {
       { status: 400 }
     )
   }
+
+  // 1.6 checks if the answer  contains a number, if so, use a reasoning model for accurate answers
+  const containsNumber = /\d/.test(userAnswer);
+  const model = containsNumber ? "o3-mini-2025-01-31" : "gpt-4o-mini-2024-07-18";
 
   // 2) load the question
   const { data: question, error: qErr } = await supabase
@@ -41,23 +50,30 @@ export async function POST(req) {
 
   try {
     const response = await openai.responses.parse({
-      model: "gpt-4o-2024-08-06",
+      model: model,
       input: [
         {
           role: "system",
           content:
-        `Eres un teólogo cristiano bautista que respeta mucho la doctrina cristiana y que se preserve la integridad de las escrituras. Tu versión en la que te especializas es Reina Valera 1960. Tu tarea es corroborar que la siguiente pregunta se conteste de la manera correcta. Si no se responde de manera correcta, agrega una explicación breve y amigable en la que se le explique al usuario el por qué no es correcta.
+        `Eres un teólogo cristiano bautista que respeta mucho la doctrina cristiana y que se preserve la integridad de las escrituras. Tu tarea es corroborar que la siguiente pregunta se conteste de la manera correcta. Si no se responde de manera correcta, agrega una explicación breve y amigable en la que se le explique al usuario el por qué no es correcta.
         Cosas que deberías saber: Tus respuestas vienen de jóvenes con una edad promedio de 20 años.
         Estos jóvenes están practicando para una competencia de preguntas y respuestas sobre Jueces y Rut. No seas tan duro con ellos jaja
         Importante:
         - La pregunta se basa en el pasaje ${reference}
-        - Si la respuesta no tiene nada que ver con la pregunta, responde algo como "suerte con eso" y marcala como incorrecta
+        - Si vas a sugerir citas, omite la versión de la Biblia
+        - Si responde algo como "No sé" o "No estoy seguro", considera que la respuesta es incorrecta y agrega una explicación breve y amigable.
+        - Puede que el usuario conozca el nombre de las ciudades en versiones distintas, así que no te limites a Reina Valera 1960
+        - Si la respuesta no tiene nada que ver con la pregunta, responde algo como "haha :) la respuesta correcta es: ..." y marcala como incorrecta
         ${question.text}
 
         Ejemplo de output:
         {
           "isCorrect": false,
           "explanation": "Ouch:( Cerca, pero recuerda que ese personaje aparece en...
+        }
+        {
+          "isCorrect": true,
+          "explanation": "¡Correcto! El personaje mencionado es..."
         }
         `,
         },
@@ -71,6 +87,7 @@ export async function POST(req) {
 const anwserVerificationOutput = response.output_parsed;
 
 const jsonToReturn = {
+  model,
   questionId,
   questionText: question.text,
   reference,
