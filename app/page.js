@@ -5,7 +5,7 @@ import MultipleChoiceQuestion from "../components/MultipleChoiceQuestion";
 import OpenAnswerQuestion from "../components/OpenAnswerQuestion";
 
 export default function Home() {
-  const [allQuestions, setAllQuestions] = useState([]); // NEW: store all fetched questions
+  const [allQuestions, setAllQuestions] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -400,16 +400,21 @@ export default function Home() {
           <h1 className="text-xl font-semibold">Estudio Bíblico Interactivo</h1>
           <button
             onClick={() => {
-              // Reset all quiz-related states to go back to selection
-              setQuizStarted(false);
-              setQuestionType(null);
-              setNumQuestions(null);
-              setCurrentIdx(0);
-              setResults([]);
-              setSkippedQuestions([]);
-              setSelected(null);
-              setOpenAnswer("");
-              setVerified(false);
+              const confirmReset = window.confirm(
+                "¿Estás seguro de que quieres configurar un nuevo quiz? Perderás tu progreso actual."
+              );
+              if (confirmReset) {
+                // Reset all quiz-related states to go back to selection
+                setQuizStarted(false);
+                setQuestionType(null);
+                setNumQuestions(null);
+                setCurrentIdx(0);
+                setResults([]);
+                setSkippedQuestions([]);
+                setSelected(null);
+                setOpenAnswer("");
+                setVerified(false);
+              }
             }}
             className="text-sm bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-md"
           >
@@ -422,6 +427,15 @@ export default function Home() {
 
       <main className="min-h-[calc(100vh-4rem)] bg-gray-50 flex flex-col items-center justify-start p-4 pt-8"> {/* Adjusted min-height */}
         <div className="relative bg-white border rounded-lg shadow-xl p-6 sm:p-8 w-full max-w-xl mb-8">
+          {/* Display Chosen Question Type */}
+          {questionType && (
+            <div className="text-center mb-4">
+              <span className="text-sm font-semibold text-indigo-600 px-3 py-1 bg-indigo-100 rounded-full">
+                Tipo de Quiz: {questionType === "multiple" ? "Opción Múltiple" : questionType === "open" ? "Respuesta Abierta" : "Ambas"}
+              </span>
+            </div>
+          )}
+
           {/* PROGRESS BAR */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
