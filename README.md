@@ -2,6 +2,14 @@
 
 A Next.js application for interactive Bible study through multiple-choice and open-answer questions. Users can test their knowledge of scripture and get immediate feedback on their answers with AI-powered verification.
 
+## Live Demo
+
+You can try out the live application here: [https://study-bible-smoky.vercel.app/](https://study-bible-smoky.vercel.app/)
+
+## Application Screenshot
+
+![Estudio Bíblico Interactivo](assets/ui_screenshot.png)
+
 ## Features
 
 - Interactive multiple-choice and open-answer quiz interface
