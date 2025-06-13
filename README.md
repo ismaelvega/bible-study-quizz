@@ -4,7 +4,7 @@ A Next.js application for interactive Bible study through multiple-choice and op
 
 ## Live Demo
 
-You can try out the live application here: [https://study-bible-smoky.vercel.app/](https://study-bible-smoky.vercel.app/)
+You can try out the live application here: [https://study-bible-smoky.vercel.app](https://bible-study-quizz.vercel.app/)
 
 ## Application Screenshot
 
@@ -18,7 +18,6 @@ You can try out the live application here: [https://study-bible-smoky.vercel.app
 - Score tracking with visual indicators (✅/❌)
 - Progress tracking with mastery and practice suggestions
 - Bible passage references and links
-- Spanish localization ("Estudia Jueces y Rut")
 - Responsive design with Tailwind CSS
 - Supabase backend for question storage
 - Randomized question order
